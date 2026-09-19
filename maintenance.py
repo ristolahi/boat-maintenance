@@ -1,5 +1,6 @@
 import json
 import tkinter as tk
+from datetime import date
 
 with open("tasks.json") as f:
     tasks = json.load(f)
@@ -7,24 +8,38 @@ with open("tasks.json") as f:
 
 BG = "#eaf4fb"
 ACCENT = "#013a63"
+today = date.today().isoformat()
 
 root = tk.Tk()
 root.title("Boat Maintenance")
-root.geometry("440x520")
+root.geometry("440x560")
 root.configure(bg=BG)
 
 title = tk.Label(root, text="⛵ Boat Maintenance", font=("Segoe UI", 18, "bold"), bg=BG, fg=ACCENT)
-title.pack(pady=(15, 10))
+title.pack(pady=(15, 5))
+
+progress_canvas = tk.Canvas(root, width=380, height=22, bg="white", highlightthickness=1, highlightbackground=ACCENT)
+progress_canvas.pack(pady=(0, 15))
+progress_bar = progress_canvas.create_rectangle(0, 0, 0, 22, fill="#2a9d8f", width=0)
+progress_text = progress_canvas.create_text(190, 11, text="", font=("Segoe UI", 9, "bold"))
+
+def update_progress():
+    total = len(tasks)
+    done = sum(1 for t in tasks if t["done"])
+    width = int((done / total) * 380) if total else 0
+    progress_canvas.coords(progress_bar, 0, 0, width, 22)
+    progress_canvas.itemconfig(progress_text, text=f"{done} of {total} tasks done")
 
 check_vars = []
 task_frame = tk.Frame(root, bg=BG)
-task_frame.pack(pady=10, fill="x", padx=15)
+task_frame.pack(pady=5, fill="x", padx=15)
 
 def save():
     for task, var in zip(tasks, check_vars):
         task["done"] = var.get()
     with open("tasks.json", "w") as f:
         json.dump(tasks, f, indent=2)
+    update_progress()
     print("Saved!")
 
 def add_checkbox(task):
@@ -33,9 +48,13 @@ def add_checkbox(task):
     row = tk.Frame(task_frame, bg=BG)
     row.pack(anchor="w", fill="x", pady=3)
 
-    text = f"{task['due']} - {task['name']}"
+    overdue = (not task["done"]) and task["due"] < today
+    text_color = "#c1121f" if overdue else "black"
+    prefix = "⚠️ " if overdue else ""
+    text = f"{prefix}{task['due']} - {task['name']}"
+
     checkbox = tk.Checkbutton(row, text=text, variable=var, font=("Segoe UI", 12), bg=BG,
-                               activebackground=BG, command=save)
+                               activebackground=BG, fg=text_color, selectcolor="white", command=save)
     checkbox.pack(side="left")
 
     def delete_task():
@@ -56,6 +75,7 @@ def refresh_list():
     check_vars.clear()
     for task in tasks:
         add_checkbox(task)
+    update_progress()
 
 refresh_list()
 

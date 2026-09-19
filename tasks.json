@@ -17,7 +17,7 @@
   {
     "name": "Check oil",
     "due": "2026-06-30",
-    "done": false
+    "done": true
   },
   {
     "name": "Polish hull",
